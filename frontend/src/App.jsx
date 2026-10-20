@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import EntityPage from './pages/EntityPage'
 import Attendance from './pages/Attendance'
 import Reports from './pages/Reports'
+import QueryLab from './pages/QueryLab'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="e/:entity" element={<EntityPage />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="query-lab" element={<QueryLab />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

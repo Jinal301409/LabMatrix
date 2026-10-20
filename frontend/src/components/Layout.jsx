@@ -21,6 +21,7 @@ export default function Layout() {
           <NavLink to="/" end className={link}>Dashboard</NavLink>
           {['Admin', 'Faculty'].includes(user.role) && <NavLink to="/attendance" className={link}>Attendance</NavLink>}
           <NavLink to="/reports" className={link}>Reports</NavLink>
+          {user.role === 'Admin' && <NavLink to="/query-lab" className={link}>Query Lab</NavLink>}
           {Object.entries(groups).map(([g, keys]) => (
             <div key={g}>
               <div className="px-3 pb-1 pt-4 text-xs uppercase tracking-wide text-slate-500">{g}</div>

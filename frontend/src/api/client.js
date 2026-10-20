@@ -37,6 +37,9 @@ async function request(path, method = 'GET', body) {
   return json.data
 }
 
+const qs = (o) =>
+  '?' + new URLSearchParams(Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''))).toString()
+
 export const api = {
   login: (email, password) => request('/auth/login', 'POST', { email, password }),
   me: () => request('/auth/me'),
@@ -49,4 +52,18 @@ export const api = {
   rejectBooking: (id) => request(`/bookings/${id}`, 'PUT', { status: 'Rejected' }),
   getAttendance: (sessionId) => request(`/sessions/${sessionId}/attendance`),
   saveAttendance: (sessionId, rows) => request(`/sessions/${sessionId}/attendance`, 'PUT', { rows }),
+  // Query Lab (lab assignment parts D and E)
+  ql: {
+    tables: () => request('/querylab/tables'),
+    stats: () => request('/querylab/stats'),
+    display: (table, page = 1, limit = 50) => request(`/querylab/table/${table}${qs({ page, limit })}`),
+    insert: (table, values) => request(`/querylab/insert/${table}`, 'POST', { values }),
+    aggregate: (p) => request('/querylab/aggregate' + qs(p)),
+    filter: (p) => request('/querylab/filter' + qs(p)),
+    presets: () => request('/querylab/presets'),
+    runPreset: (id, param) => request(`/querylab/presets/${id}/run` + qs({ param })),
+    update: (body) => request('/querylab/update', 'PUT', body),
+    joinPairs: () => request('/querylab/join-pairs'),
+    join: (p) => request('/querylab/join' + qs(p)),
+  },
 }
