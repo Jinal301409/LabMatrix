@@ -10,6 +10,10 @@ const pool = mysql.createPool({
     port: Number(process.env.DB_PORT) || 3306,
     waitForConnections: true,
     connectionLimit: 10,
+    // Return DATE / DATETIME columns as plain text like "2026-10-20".
+    // Without this, Node turns them into JS Dates, and on an India-time laptop
+    // the screen then shows the previous day.
+    dateStrings: true,
 });
 
 module.exports = pool;
