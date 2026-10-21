@@ -42,6 +42,8 @@ const qs = (o) =>
 
 export const api = {
   login: (email, password) => request('/auth/login', 'POST', { email, password }),
+  signup: (body) => request('/auth/signup', 'POST', body),
+  signupBatches: () => request('/auth/batches'),
   me: () => request('/auth/me'),
   list: (entity) => request(`/${entity}?limit=200`),
   page: (entity, params) => request(`/${entity}${qs(params)}`, 'GET', undefined, true), // { data, meta }

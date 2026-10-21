@@ -4,7 +4,9 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 const userModel = require("../models/user.model");
 const AppError = require("../utils/AppError");
+const { isCollegeEmail } = require("../utils/collegeEmail");
 
+// Admin-created accounts (any role). Used by POST /auth/register and POST /users.
 exports.register = async (data) => {
     const connection = await pool.getConnection();
 
@@ -82,7 +84,7 @@ exports.register = async (data) => {
         await connection.rollback();
 
         if (error.code === "ER_DUP_ENTRY") {
-            throw new AppError("Email or identifier already exists", 409);
+            throw new AppError("Email or enrollment number already exists", 409);
         }
 
         if (error.code === "ER_NO_REFERENCED_ROW_2") {
@@ -96,6 +98,23 @@ exports.register = async (data) => {
     } finally {
         connection.release();
     }
+};
+
+// Public self sign-up. The role is ALWAYS Student, whatever the client sends.
+// Faculty / Technician / Admin accounts are still created by an Admin.
+exports.signup = async (data) => {
+    if (!isCollegeEmail(data.email)) {
+        throw new AppError("Please sign up with your college email address", 400);
+    }
+
+    return exports.register({
+        full_name: data.full_name,
+        email: data.email,
+        password: data.password,
+        role: "Student",
+        enrollment_no: data.enrollment_no,
+        batch_id: data.batch_id
+    });
 };
 
 exports.login = async (email, password) => {

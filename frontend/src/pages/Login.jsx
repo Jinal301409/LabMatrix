@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const notice = location.state?.notice
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -35,6 +37,7 @@ export default function Login() {
       <div className="flex items-center justify-center p-6">
         <form onSubmit={submit} className="w-full max-w-sm space-y-4">
           <h2 className="text-2xl font-semibold">Sign in</h2>
+          {notice && <p className="rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-800">{notice}</p>}
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-600">Email</label>
             <input id="email" name="email" type="email" required autoComplete="username"
@@ -49,6 +52,10 @@ export default function Login() {
           <button disabled={busy} className="w-full rounded-lg bg-teal-700 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60">
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
+          <p className="text-center text-sm text-slate-600">
+            New student?{' '}
+            <Link to="/signup" className="font-medium text-teal-700 hover:underline">Create an account</Link>
+          </p>
         </form>
       </div>
     </div>
