@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import DataTable from '../components/DataTable'
+import { useAuth } from '../context/AuthContext'
 
 const REPORTS = {
   lab_usage: 'Most-used labs',
@@ -10,7 +11,14 @@ const REPORTS = {
   lab_health: 'Lab health',
 }
 
+// reports that the server only gives to some roles
+const ONLY = {
+  student_attendance: ['Admin', 'Faculty'],
+  frequent_maintenance: ['Admin', 'Technician'],
+}
+
 export default function Reports() {
+  const { user } = useAuth()
   const [name, setName] = useState('lab_usage')
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
@@ -24,7 +32,7 @@ export default function Reports() {
     <>
       <h1 className="mb-4 text-2xl font-semibold">Reports</h1>
       <div className="mb-4 flex flex-wrap gap-2">
-        {Object.entries(REPORTS).map(([k, v]) => (
+        {Object.entries(REPORTS).filter(([k]) => !ONLY[k] || ONLY[k].includes(user.role)).map(([k, v]) => (
           <button key={k} onClick={() => setName(k)}
             className={`rounded-lg px-3 py-1.5 text-sm ${k === name ? 'bg-teal-700 text-white' : 'border border-slate-300 bg-white'}`}>{v}</button>
         ))}

@@ -13,9 +13,17 @@ const VIEWS = {
   frequent_maintenance: 'v_frequent_maintenance',
 };
 
+// reports that need a staff role (the others are open to every logged-in user)
+const RESTRICTED = {
+  student_attendance: ['Admin', 'Faculty'],
+  frequent_maintenance: ['Admin', 'Technician'],
+};
+
 router.get('/:name', auth, asyncHandler(async (req, res) => {
   const view = VIEWS[req.params.name];
   if (!view) throw new AppError('Unknown report', 404);
+  const allowed = RESTRICTED[req.params.name];
+  if (allowed && !allowed.includes(req.user.role)) throw new AppError('You do not have permission', 403);
   const [rows] = await pool.query(`SELECT * FROM ${view}`);
   res.json({ success: true, data: rows });
 }));

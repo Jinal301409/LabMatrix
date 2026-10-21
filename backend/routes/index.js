@@ -11,6 +11,15 @@ router.use('/views', require('./views.routes'));
 router.use('/querylab', require('./querylab.routes'));
 
 // ---- Teammate B: add ONE line per module below ----
-// router.use('/labs', require('./lab.routes'));
+router.use('/labs', require('./lab.routes'));
+router.use('/computers', require('./computer.routes'));
+router.use('/equipment', require('./equipment.routes'));
+router.use('/software', require('./software.routes'));
+router.use('/installs', require('./install.routes'));
+router.use('/sessions', require('./session.routes'));
+router.use('/bookings', require('./booking.routes'));
+router.use('/requests', require('./request.routes'));
+router.use('/maintenance', require('./maintenance.routes'));
+router.use('/options', require('./options.routes'));
 
 module.exports = router;

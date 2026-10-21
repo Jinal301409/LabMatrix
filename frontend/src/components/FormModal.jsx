@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
 
 const input =
   'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600'
@@ -13,13 +14,23 @@ function toInputValue(field, v) {
 export default function FormModal({ title, fields, row, onSave, onClose }) {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [refs, setRefs] = useState({}) // dropdown lists, e.g. { labs: [{ value, label }] }
+
+  // load the list behind every dropdown field (labs, faculty, courses ...)
+  useEffect(() => {
+    for (const name of new Set(fields.filter((f) => f.t === 'ref').map((f) => f.ref))) {
+      api.options(name).then((list) => setRefs((r) => ({ ...r, [name]: list }))).catch(() => {})
+    }
+  }, []) // eslint-disable-line
 
   const submit = async (e) => {
     e.preventDefault()
     const body = {}
     for (const [k, v] of new FormData(e.target)) body[k] = v === '' ? null : v
-    // number fields must be sent as numbers
-    for (const f of fields) if (f.t === 'number' && body[f.k] !== null) body[f.k] = Number(body[f.k])
+    // number and dropdown (id) fields must be sent as numbers
+    for (const f of fields) {
+      if ((f.t === 'number' || f.t === 'ref') && body[f.k] !== null && body[f.k] !== undefined) body[f.k] = Number(body[f.k])
+    }
     setSaving(true)
     setError('')
     try {
@@ -38,18 +49,32 @@ export default function FormModal({ title, fields, row, onSave, onClose }) {
           {fields.map((f) => {
             const v = toInputValue(f, row?.[f.k])
             const span = f.full || f.t === 'textarea' ? 'sm:col-span-2' : ''
+            let control
+            if (f.t === 'select') {
+              control = (
+                <select name={f.k} defaultValue={v || f.opts[0]} className={input}>
+                  {f.opts.map((o) => <option key={o}>{o}</option>)}
+                </select>
+              )
+            } else if (f.t === 'ref') {
+              // keep the saved value selectable even if it is not in the list (e.g. a finished job's report)
+              const list = refs[f.ref] || []
+              const options = v && !list.some((o) => String(o.value) === String(v)) ? [...list, { value: v, label: `#${v}` }] : list
+              control = (
+                <select name={f.k} defaultValue={v} required={!f.optional} className={input}>
+                  <option value="">{f.optional ? '(none)' : 'Choose...'}</option>
+                  {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              )
+            } else if (f.t === 'textarea') {
+              control = <textarea name={f.k} rows={3} defaultValue={v} required={!f.optional} className={input} />
+            } else {
+              control = <input name={f.k} type={f.t} defaultValue={v} required={!f.optional} className={input} />
+            }
             return (
               <div key={f.k} className={span}>
                 <label className="mb-1 block text-sm font-medium text-slate-600">{f.l}</label>
-                {f.t === 'select' ? (
-                  <select name={f.k} defaultValue={v || f.opts[0]} className={input}>
-                    {f.opts.map((o) => <option key={o}>{o}</option>)}
-                  </select>
-                ) : f.t === 'textarea' ? (
-                  <textarea name={f.k} rows={3} defaultValue={v} required={!f.optional} className={input} />
-                ) : (
-                  <input name={f.k} type={f.t} defaultValue={v} required={!f.optional} className={input} />
-                )}
+                {control}
               </div>
             )
           })}
