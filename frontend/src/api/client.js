@@ -18,7 +18,7 @@ export const storage = {
   },
 }
 
-async function request(path, method = 'GET', body) {
+async function request(path, method = 'GET', body, full = false) {
   const res = await fetch('/api' + path, {
     method,
     headers: {
@@ -34,7 +34,7 @@ async function request(path, method = 'GET', body) {
     window.location.href = '/login'
   }
   if (!res.ok) throw new Error(json.message || `Request failed (${res.status})`)
-  return json.data
+  return full ? json : json.data // full = keep { data, meta } for paged lists
 }
 
 const qs = (o) =>
@@ -43,12 +43,15 @@ const qs = (o) =>
 export const api = {
   login: (email, password) => request('/auth/login', 'POST', { email, password }),
   me: () => request('/auth/me'),
-  list: (entity) => request(`/${entity}`),
+  list: (entity) => request(`/${entity}?limit=200`),
+  page: (entity, params) => request(`/${entity}${qs(params)}`, 'GET', undefined, true), // { data, meta }
+  options: (name) => request(`/options/${name}`),
   create: (entity, body) => request(`/${entity}`, 'POST', body),
   update: (entity, id, body) => request(`/${entity}/${id}`, 'PUT', body),
   remove: (entity, id) => request(`/${entity}/${id}`, 'DELETE'),
   view: (name) => request(`/views/${name}`),
   approveBooking: (id) => request(`/bookings/${id}/approve`, 'POST'),
+  cancelBooking: (id) => request(`/bookings/${id}`, 'PUT', { status: 'Cancelled' }),
   rejectBooking: (id) => request(`/bookings/${id}`, 'PUT', { status: 'Rejected' }),
   getAttendance: (sessionId) => request(`/sessions/${sessionId}/attendance`),
   saveAttendance: (sessionId, rows) => request(`/sessions/${sessionId}/attendance`, 'PUT', { rows }),

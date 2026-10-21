@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 export default function Attendance() {
+  const { user } = useAuth()
   const [sessions, setSessions] = useState([])
   const [sessionId, setSessionId] = useState('')
   const [rows, setRows] = useState([])
   const [message, setMessage] = useState('')
 
-  useEffect(() => { api.list('sessions').then(setSessions).catch((e) => setMessage(e.message)) }, [])
+  useEffect(() => {
+    const own = user.role === 'Faculty' ? { faculty_id: user.user_id } : {}
+    api.page('sessions', { limit: 200, ...own }).then((r) => setSessions(r.data)).catch((e) => setMessage(e.message))
+  }, []) // eslint-disable-line
 
   const pick = async (id) => {
     setSessionId(id)
@@ -35,7 +40,7 @@ export default function Attendance() {
           <option value="">Select a session</option>
           {sessions.map((s) => (
             <option key={s.session_id} value={s.session_id}>
-              {String(s.session_date).slice(0, 10)}: {s.topic || `Session ${s.session_id}`}
+              {String(s.session_date).slice(0, 10)} | {s.course_code} | {s.batch_name} | {s.topic || `Session ${s.session_id}`}
             </option>
           ))}
         </select>
