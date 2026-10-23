@@ -56,6 +56,30 @@ module.exports = function makeResource(cfg) {
     }
   };
 
+  // Some modules (bookings, sessions) must not save two clashing rows when two people
+  // press Save at the same moment. cfg.lock(body) lists the rows to lock first, always in
+  // the same order, e.g. [['lab', 'lab_id', 3]]. The database trigger then does the overlap
+  // check while nobody else can save for that lab. Modules without cfg.lock are unaffected.
+  const write = async (sql, params, body) => {
+    const locks = cfg.lock ? cfg.lock(body).filter(([, , id]) => id) : [];
+    if (!locks.length) return pool.query(sql, params);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const [table, col, id] of locks) {
+        await conn.query(`SELECT ${q(col)} FROM ${q(table)} WHERE ${q(col)} = ? FOR UPDATE`, [id]);
+      }
+      const result = await conn.query(sql, params);
+      await conn.commit();
+      return result;
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+  };
+
   // ---- handlers ----
   const list = asyncHandler(async (req, res) => {
     const page = clamp(req.query.page, 1, 1000000, 1);
@@ -94,9 +118,10 @@ module.exports = function makeResource(cfg) {
     if (cfg.beforeCreate) body = (await cfg.beforeCreate(req, body)) || body;
     const cols = cfg.fields.filter((f) => body[f] !== undefined && body[f] !== null);
     if (!cols.length) throw new AppError('Nothing to save', 400);
-    const [r] = await pool.query(
+    const [r] = await write(
       `INSERT INTO ${q(cfg.table)} (${cols.map(q).join(', ')}) VALUES (?)`,
-      [cols.map((c) => body[c])]
+      [cols.map((c) => body[c])],
+      body
     );
     const id = keys.length === 1 ? r.insertId : keys.map((k) => body[k]).join('-');
     if (cfg.afterCreate) await cfg.afterCreate(req, id, body);
@@ -117,9 +142,10 @@ module.exports = function makeResource(cfg) {
       else if ((cfg.nullable || []).includes(f)) sets.push(`${q(f)} = NULL`); // a cleared optional field
     }
     if (!sets.length) throw new AppError('Nothing to change', 400);
-    await pool.query(
+    await write(
       `UPDATE ${q(cfg.table)} SET ${sets.join(', ')} WHERE ${keys.map((k) => `${q(k)} = ?`).join(' AND ')}`,
-      [...params, ...parts]
+      [...params, ...parts],
+      body
     );
     const newId = keys.length === 1 ? req.params.id : keys.map((k, i) => body[k] ?? parts[i]).join('-');
     if (cfg.afterUpdate) await cfg.afterUpdate(req, newId, body, row);

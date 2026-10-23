@@ -4,7 +4,7 @@ const makeResource = require('../utils/crudFactory');
 const schema = z.object({
   lab_name: z.string().trim().min(1).max(80),
   building: z.string().trim().min(1).max(60),
-  floor: z.number().int().default(0),
+  floor: z.number().int().optional(), // blank on create = 0 (database default); an edit that omits it keeps the old floor
   capacity: z.number().int().min(1),
   lab_type: z.enum(['Computer', 'Electronics', 'Network', 'Research', 'General']),
   in_charge_faculty_id: z.number().int().optional(),
