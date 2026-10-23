@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ACCESS, ENTITIES } from '../config/entities'
+import PageTransition from './loaders/PageTransition'
 
 const link = ({ isActive }) =>
   `block rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-teal-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`
@@ -36,7 +37,7 @@ export default function Layout() {
       </aside>
       <main className="w-full max-w-6xl p-4 md:p-8">
         <button onClick={() => setOpen(!open)} className="mb-4 rounded-lg border border-slate-300 px-3 py-1.5 text-sm md:hidden">Menu</button>
-        <Outlet />
+        <PageTransition />
       </main>
     </div>
   )
