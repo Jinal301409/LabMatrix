@@ -3,6 +3,17 @@ const makeResource = require('../utils/crudFactory');
 const AppError = require('../utils/AppError');
 const { datetime } = require('../utils/fields');
 
+// "2026-10-28T10:00" or "2026-10-28 10:00:00" -> "2026-10-28 10:00" so two values can be compared
+const norm = (v) => String(v).replace('T', ' ').slice(0, 16);
+
+// a new booking cannot start in the past (compared in the server's own time zone)
+const mustBeInFuture = (start) => {
+  const d = new Date(norm(start).replace(' ', 'T'));
+  if (Number.isNaN(d.getTime()) || d.getTime() < Date.now()) {
+    throw new AppError('start_datetime: you cannot book a time that has already passed', 400);
+  }
+};
+
 const schema = z.object({
   lab_id: z.number().int().positive(),
   faculty_id: z.number().int().positive().optional(), // Faculty: always themselves. Admin: must choose.
@@ -36,11 +47,14 @@ module.exports = makeResource({
 
   // a new booking always starts as Pending: nobody can approve their own request
   beforeCreate: (req, body) => {
+    mustBeInFuture(body.start_datetime);
     if (req.user.role === 'Faculty') body.faculty_id = req.user.user_id;
     else if (!body.faculty_id) throw new AppError('faculty_id: choose the faculty member', 400);
     return body;
   },
   beforeUpdate: (req, body, row) => {
+    // only check when the start time is actually being changed, so other edits to an old booking still work
+    if (norm(body.start_datetime) !== norm(row.start_datetime)) mustBeInFuture(body.start_datetime);
     body.faculty_id = req.user.role === 'Faculty' ? row.faculty_id : (body.faculty_id || row.faculty_id);
     return body;
   },
@@ -79,5 +93,7 @@ module.exports = makeResource({
       res.json({ success: true, data: await h.getRow(req, req.params.id) });
     }));
   },
+  // lock the lab while saving, so two simultaneous requests cannot both take the slot
+  lock: (body) => [['lab', 'lab_id', body.lab_id]],
   schema,
 });

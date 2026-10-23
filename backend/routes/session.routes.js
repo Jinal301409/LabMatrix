@@ -111,5 +111,7 @@ module.exports = makeResource({
       res.json({ success: true, message: `Attendance saved for ${rows.length} students` });
     }));
   },
+  // lock lab, faculty and batch (always in this order) while saving, so simultaneous saves cannot clash
+  lock: (body) => [['lab', 'lab_id', body.lab_id], ['faculty', 'user_id', body.faculty_id], ['batch', 'batch_id', body.batch_id]],
   schema,
 });

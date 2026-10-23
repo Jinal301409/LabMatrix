@@ -174,18 +174,20 @@ WHERE c.computer_id <= 150;
 -- ---------------------------------------------------------------------
 -- 6. Lab sessions (1500) and attendance (about 150,000 rows)
 -- ---------------------------------------------------------------------
+-- Built so no two sessions clash: in each block of 40 sessions every lab is used once,
+-- and a faculty member / batch that appears again in the block gets a different time slot.
 INSERT INTO lab_session (lab_id, faculty_id, course_id, batch_id, session_date,
                          start_time, end_time, topic)
-WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i+1 FROM n WHERE i < 1500)
+WITH RECURSIVE n AS (SELECT 0 AS i UNION ALL SELECT i+1 FROM n WHERE i < 1499)
 SELECT 1 + MOD(i, 40),
        f.id,
-       1 + MOD(i, 12),
-       1 + MOD(i, 12),
-       DATE_SUB(CURDATE(), INTERVAL MOD(i, 240) DAY),
-       MAKETIME(9 + MOD(i, 6), 0, 0),
-       MAKETIME(11 + MOD(i, 6), 0, 0),
-       CONCAT('Practical ', i)
-FROM n JOIN tmp_fac f ON f.k = MOD(i, 12);
+       1 + MOD(MOD(i, 40), 12),
+       1 + MOD(MOD(i, 40), 12),
+       DATE_SUB(CURDATE(), INTERVAL FLOOR(i / 40) * 6 DAY),
+       MAKETIME(9 + 2 * FLOOR(MOD(i, 40) / 12), 0, 0),
+       MAKETIME(11 + 2 * FLOOR(MOD(i, 40) / 12), 0, 0),
+       CONCAT('Practical ', i + 1)
+FROM n JOIN tmp_fac f ON f.k = MOD(MOD(i, 40), 12);
 
 -- every student of the session's batch gets a row: mostly Present, some Late/Absent
 INSERT INTO attendance (student_id, session_id, status)
@@ -197,16 +199,17 @@ FROM lab_session ls
 JOIN student st ON st.batch_id = ls.batch_id;
 
 -- ---------------------------------------------------------------------
--- 7. Bookings (1500). Approved ones get a different day per lab, so the
---    "no overlapping approved bookings" trigger never fires on seed data.
+-- 7. Bookings (1500). Each lab gets at most one booking per day, and bookings are
+--    in the evening (18:00-20:00) after the day's lab sessions, so the
+--    booking / session clash triggers never fire on seed data.
 -- ---------------------------------------------------------------------
 INSERT INTO lab_booking (lab_id, faculty_id, start_datetime, end_datetime, purpose,
                          status, approved_by)
 WITH RECURSIVE n AS (SELECT 0 AS i UNION ALL SELECT i+1 FROM n WHERE i < 1499)
 SELECT 1 + MOD(i, 40),
        f.id,
-       TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL FLOOR(i / 40) - 20 DAY), '09:00:00'),
-       TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL FLOOR(i / 40) - 20 DAY), '12:00:00'),
+       TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL FLOOR(i / 40) - 20 DAY), '18:00:00'),
+       TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL FLOOR(i / 40) - 20 DAY), '20:00:00'),
        CONCAT('Extra practical / workshop ', i),
        ELT(1 + MOD(i, 4), 'Approved', 'Pending', 'Rejected', 'Cancelled'),
        IF(MOD(i, 4) IN (0, 2), 1, NULL)
