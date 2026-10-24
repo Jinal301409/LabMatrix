@@ -53,10 +53,30 @@
 .skip:hover { color: #5eead4; border-color: rgba(94,234,212,.5); }
 
 /* ---------- 2) PAGE TRANSITION ---------- */
+/* loader shown for ~0.7 s on every page switch: top progress line + small pill */
+.pl { position: fixed; inset: 0 0 auto 0; z-index: 40; height: 0; pointer-events: none; animation: pl-life .75s linear forwards; }
+@media (min-width: 768px) { .pl { left: 240px; } } /* keep the sidebar clear */
+.pl-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; transform-origin: left; transform: scaleX(0);
+  background: linear-gradient(90deg, #14b8a6, #22d3ee, #5eead4); box-shadow: 0 0 10px rgba(45,212,191,.7);
+  animation: pl-bar .72s cubic-bezier(.25,.8,.3,1) forwards; }
+@keyframes pl-bar { 0% { transform: scaleX(0); } 55% { transform: scaleX(.78); } 100% { transform: scaleX(1); } }
+@keyframes pl-life { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.pl-pill { position: absolute; top: .9rem; left: 50%; display: flex; align-items: center; gap: .55rem;
+  padding: .4rem .85rem .4rem .65rem; border-radius: 99px; font-size: .78rem; color: #cbd5e1;
+  background: rgba(15,23,42,.92); box-shadow: 0 6px 20px rgba(15,23,42,.25);
+  transform: translate(-50%, -8px); opacity: 0; animation: pl-pill .72s ease-out forwards; }
+.pl-pill b { color: #5eead4; font-weight: 600; }
+@keyframes pl-pill { 0% { opacity: 0; transform: translate(-50%, -8px); } 20%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -4px); } }
+.pl-ring { width: .85rem; height: .85rem; border-radius: 50%; border: 2px solid rgba(94,234,212,.3); border-top-color: #5eead4; animation: ring .6s linear infinite; }
+@keyframes ring { to { transform: rotate(360deg); } }
+
+/* the new page eases in */
 .page-enter { animation: page-enter .22s ease-out both; }
 @keyframes page-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: reduce) {
+  .pl { display: none; }
   .splash *, .page-enter { animation-duration: .001s !important; animation-delay: 0s !important; }
   .splash { transition-duration: .001s; }
 }
