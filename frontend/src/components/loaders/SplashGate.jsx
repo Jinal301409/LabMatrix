@@ -3,15 +3,19 @@ import SplashScreen from './SplashScreen'
 
 // true  = play the intro every time the website is opened or refreshed
 // false = play it once per browser tab (it stays away on refresh)
-const SHOW_EVERY_TIME = true
+const SHOW_EVERY_TIME = false
 const KEY = 'labmatrix_splash_seen'
+
+const seen = () => {
+  try { return !!sessionStorage.getItem(KEY) } catch { return false }
+}
 
 // Wraps the whole app: the app starts loading underneath while the intro plays on top.
 export default function SplashGate({ children }) {
-  const [show, setShow] = useState(() => SHOW_EVERY_TIME || !sessionStorage.getItem(KEY))
+  const [show, setShow] = useState(() => SHOW_EVERY_TIME || !seen())
 
   const finish = () => {
-    sessionStorage.setItem(KEY, '1')
+    try { sessionStorage.setItem(KEY, '1') } catch { /* storage unavailable: ignore */ }
     setShow(false)
   }
 
