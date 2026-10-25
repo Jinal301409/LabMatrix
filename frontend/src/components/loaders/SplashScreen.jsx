@@ -20,7 +20,9 @@ export default function SplashScreen({ onDone }) {
   useEffect(() => {
     const ctl = new AbortController()
     const abort = setTimeout(() => ctl.abort(), MAX_MS)
-    fetch('/api/health', { signal: ctl.signal })
+    
+fetch(`${import.meta.env.VITE_API_URL || ''}/api/health`, { signal: ctl.signal })
+
       .catch(() => {})
       .finally(() => { clearTimeout(abort); ready.current = true })
     return () => { clearTimeout(abort); ctl.abort() }
