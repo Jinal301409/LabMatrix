@@ -1,5 +1,8 @@
 // One place for every backend call. The backend replies { success, data, message },
 // so this wrapper returns only `data` and throws Error(message) on failure.
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 const TOKEN_KEY = 'lm_token'
 const USER_KEY = 'lm_user'
 
@@ -19,7 +22,9 @@ export const storage = {
 }
 
 async function request(path, method = 'GET', body, full = false) {
-  const res = await fetch('/api' + path, {
+  
+const res = await fetch(API_BASE + '/api' + path, {
+
     method,
     headers: {
       'Content-Type': 'application/json',
